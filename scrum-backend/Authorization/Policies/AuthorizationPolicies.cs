@@ -2,6 +2,11 @@
 {
     public static class AuthorizationPolicies
     {
-        public static string ProjectOwner => "ProjectOwner";
+        public static string ProjectAdminOnly => "ProjectAdminOnly";
+        public static string ProductOwnerOnly => "ProductOwnerOnly";
+        public static string ScrumMasterOnly => "ScrumMasterOnly";
+        public static string DeveloperOnly => "DeveloperOnly";
+        public static string ProjectMemberOnly = "ProjectMemberOnly";
+
     }
 }

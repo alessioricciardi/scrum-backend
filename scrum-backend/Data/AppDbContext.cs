@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using scrum_backend.Models.AppUsers;
 using scrum_backend.Models.Projects;
-using scrum_backend.Models.Sprint;
+using scrum_backend.Models.Sprints;
 
 namespace scrum_backend.Data
 {

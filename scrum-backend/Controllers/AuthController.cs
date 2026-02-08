@@ -8,7 +8,7 @@ using scrum_backend.Services.AuthService;
 namespace scrum_backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

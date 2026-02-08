@@ -3,14 +3,14 @@
 namespace scrum_backend.Results
 {
     public record ProjectNotFound;
-    public record ProjectGetSucceeded(GetProjectResponseDto GetProjectResponseDto);
+    public record GetProjectSucceeded(GetProjectResponseDto GetProjectResponseDto);
 
-    public record ProjectCreateSucceeded(CreateProjectResponseDto CreateProjectResponseDto);
-    public record ProjectCreateFailed;
+    public record CreateProjectSucceeded(CreateProjectResponseDto CreateProjectResponseDto);
+    public record CreateProjectFailed;
 
-    public record ProjectUpdateSucceeded(UpdateProjectResponseDto UpdateProjectResponseDto);
-    public record ProjectUpdateFailed;
+    public record UpdateProjectSucceeded(UpdateProjectResponseDto UpdateProjectResponseDto);
+    public record UpdateProjectFailed;
 
-    public record ProjectDeleteSucceeded;
-    public record ProjectDeleteFailed;
+    public record DeleteProjectSucceeded;
+    public record DeleteProjectFailed;
 }

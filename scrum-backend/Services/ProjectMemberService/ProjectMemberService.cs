@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using OneOf;
 using scrum_backend.Authorization.Policies;
+using scrum_backend.Authorization.Services;
 using scrum_backend.Data;
 using scrum_backend.Dtos.ProjectMember.Requests;
 using scrum_backend.Dtos.ProjectMember.Responses;
@@ -16,36 +16,21 @@ namespace scrum_backend.Services.ProjectMemberService
     public class ProjectMemberService : IProjectMemberService
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IProjectAccessService _projectAccessService;
         private readonly IMapper _mapper;
-        private readonly IAuthorizationService _authorizationService;
         private readonly ILogger<ProjectMemberService> _logger;
 
-        public ProjectMemberService(AppDbContext appDbContext, IMapper mapper, IAuthorizationService authorizationService, ILogger<ProjectMemberService> logger)
+        public ProjectMemberService(AppDbContext appDbContext, IMapper mapper, IProjectAccessService authorizationService, ILogger<ProjectMemberService> logger)
         {
             _appDbContext = appDbContext;
             _mapper = mapper;
-            _authorizationService = authorizationService;
+            _projectAccessService = authorizationService;
             _logger = logger;
         }
 
-        private async Task<OneOf<AuthorizationSucceeded, ProjectNotFound, Forbidden>> CheckIfAuthorizedAsync(int projectId, ClaimsPrincipal user)
+        public async Task<OneOf<GetMembersSucceeded, ProjectNotFound, Forbidden>> GetMembersAsync(int projectId, ClaimsPrincipal user)
         {
-            var project = await _appDbContext.Projects
-                                    .FirstOrDefaultAsync(p => p.Id == projectId);
-
-            if (project == null)
-                return new ProjectNotFound();
-
-            var authResult = await _authorizationService.AuthorizeAsync(user, project, AuthorizationPolicies.ProjectOwner);
-            if (!authResult.Succeeded)
-                return new Forbidden();
-
-            return new AuthorizationSucceeded();
-        }
-
-        public async Task<OneOf<MembersGetSucceeded, ProjectNotFound, Forbidden>> GetMembersAsync(int projectId, ClaimsPrincipal user)
-        {
-            var authResult = await CheckIfAuthorizedAsync(projectId, user);
+            var authResult = await _projectAccessService.GetAccessAsync(projectId, user, AuthorizationPolicies.ProjectMemberOnly);
             if (authResult.IsT1) return authResult.AsT1;
             if (authResult.IsT2) return authResult.AsT2;
 
@@ -54,12 +39,12 @@ namespace scrum_backend.Services.ProjectMemberService
                                 .ToListAsync();
 
             var result = _mapper.Map<IEnumerable<GetProjectMemberResponseDto>>(members);
-            return new MembersGetSucceeded(result);
+            return new GetMembersSucceeded(result);
         }
 
-        public async Task<OneOf<MemberGetByIdSucceeded, ProjectNotFound, MemberNotFound, Forbidden>> GetMemberByIdAsync(int projectId, int memberId, ClaimsPrincipal user)
+        public async Task<OneOf<GetMemberByIdSucceeded, ProjectNotFound, MemberNotFound, Forbidden>> GetMemberByIdAsync(int projectId, int memberId, ClaimsPrincipal user)
         {
-            var authResult = await CheckIfAuthorizedAsync(projectId, user);
+            var authResult = await _projectAccessService.GetAccessAsync(projectId, user, AuthorizationPolicies.ProjectMemberOnly);
             if (authResult.IsT1) return authResult.AsT1;
             if (authResult.IsT2) return authResult.AsT2;
 
@@ -71,12 +56,12 @@ namespace scrum_backend.Services.ProjectMemberService
 
 
             var result = _mapper.Map<GetProjectMemberResponseDto>(member);
-            return new MemberGetByIdSucceeded(result);
+            return new GetMemberByIdSucceeded(result);
         }
 
-        public async Task<OneOf<MemberAddSucceeded, MemberAddFailed, UserNotFound, UserIsAlreadyAMember, ProjectNotFound, InvalidRole, Forbidden>> AddMemberAsync(int projectId, AddProjectMemberRequestDto addProjectMemberRequestDto, ClaimsPrincipal user)
+        public async Task<OneOf<AddMemberSucceeded, AddMemberFailed, UserNotFound, UserIsAlreadyAMember, ProjectNotFound, InvalidRole, Forbidden>> AddMemberAsync(int projectId, AddProjectMemberRequestDto addProjectMemberRequestDto, ClaimsPrincipal user)
         {
-            var authResult = await CheckIfAuthorizedAsync(projectId, user);
+            var authResult = await _projectAccessService.GetAccessAsync(projectId, user, AuthorizationPolicies.ProjectAdminOnly);
             if (authResult.IsT1) return authResult.AsT1;
             if (authResult.IsT2) return authResult.AsT2;
 
@@ -91,7 +76,10 @@ namespace scrum_backend.Services.ProjectMemberService
                 return new UserNotFound();
 
             var alreadyExists = await _appDbContext.ProjectMembers
-                                        .AnyAsync(m => m.ProjectId == projectId && m.UserId == userId);
+                                            .AnyAsync(m =>
+                                                m.ProjectId == projectId &&
+                                                m.UserId == userId
+                                            );
             
             if (alreadyExists)
                 return new UserIsAlreadyAMember();
@@ -109,16 +97,16 @@ namespace scrum_backend.Services.ProjectMemberService
                 await _appDbContext.SaveChangesAsync();
 
                 var response = _mapper.Map<AddProjectMemberResponseDto>(projectMember);
-                return new MemberAddSucceeded(response);
+                return new AddMemberSucceeded(response);
             }
             catch
             {
-                return new MemberAddFailed();
+                return new AddMemberFailed();
             }
         }
-        public async Task<OneOf<MemberRoleUpdateSucceeded, MemberRoleUpdateFailed, ProjectNotFound, MemberNotFound, InvalidRole, Forbidden>> UpdateMemberRoleAsync(int projectId, int memberId, UpdateProjectMemberRoleRequestDto updateProjectMemberRoleRequestDto, ClaimsPrincipal user)
+        public async Task<OneOf<UpdateMemberRoleSucceeded, UpdateMemberRoleFailed, ProjectNotFound, MemberNotFound, InvalidRole, Forbidden>> UpdateMemberRoleAsync(int projectId, int memberId, UpdateProjectMemberRoleRequestDto updateProjectMemberRoleRequestDto, ClaimsPrincipal user)
         {
-            var authResult = await CheckIfAuthorizedAsync(projectId, user);
+            var authResult = await _projectAccessService.GetAccessAsync(projectId, user, AuthorizationPolicies.ProjectAdminOnly);
             if (authResult.IsT1) return authResult.AsT1;
             if (authResult.IsT2) return authResult.AsT2;
 
@@ -138,39 +126,37 @@ namespace scrum_backend.Services.ProjectMemberService
                 member.Role = role;
 
                 await _appDbContext.SaveChangesAsync();
-                return new MemberRoleUpdateSucceeded();
+                return new UpdateMemberRoleSucceeded();
             }
             catch
             {
-                return new MemberRoleUpdateFailed();
+                return new UpdateMemberRoleFailed();
             }
         }
 
 
-        public async Task<OneOf<MemberRemoveSucceeded, MemberRemoveFailed, MemberNotFound, ProjectNotFound, Forbidden>> RemoveMemberAsync(int projectId, int memberId, ClaimsPrincipal user)
+        public async Task<OneOf<RemoveMemberSucceeded, RemoveMemberFailed, MemberNotFound, ProjectNotFound, Forbidden>> RemoveMemberAsync(int projectId, int memberId, ClaimsPrincipal user)
         {
-            var authResult = await CheckIfAuthorizedAsync(projectId, user);
+            var authResult = await _projectAccessService.GetAccessAsync(projectId, user, AuthorizationPolicies.ProjectAdminOnly);
             if (authResult.IsT1) return authResult.AsT1;
             if (authResult.IsT2) return authResult.AsT2;
 
             var member = await _appDbContext.ProjectMembers
                             .FirstOrDefaultAsync(m => m.Id == memberId && m.ProjectId == projectId);
 
-            if (member == null)
+            if (member is null)
                 return new MemberNotFound();
 
             try
             {
                 _appDbContext.ProjectMembers.Remove(member);
                 await _appDbContext.SaveChangesAsync();
-                return new MemberRemoveSucceeded();
+                return new RemoveMemberSucceeded();
             }
             catch
             {
-                return new MemberRemoveFailed();
+                return new RemoveMemberFailed();
             }
         }
-
-
     }
 }

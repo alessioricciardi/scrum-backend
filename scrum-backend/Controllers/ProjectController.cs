@@ -8,7 +8,7 @@ using scrum_backend.Services.ProjectService;
 namespace scrum_backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/projects")]
     public class ProjectController : ControllerBase
     {
         private readonly IProjectService _projectService;
@@ -25,7 +25,7 @@ namespace scrum_backend.Controllers
             var result = await _projectService.GetProjectByIdAsync(projectId);
 
             return result.Match<IActionResult>(
-                    projectGetSucceeded => Ok(projectGetSucceeded.GetProjectResponseDto),
+                    getProjectSucceeded => Ok(getProjectSucceeded.GetProjectResponseDto),
                     projectNotFound => NotFound(new ErrorResponseDto{Message = "Project with given id was not found."})
             );
         }
@@ -37,12 +37,12 @@ namespace scrum_backend.Controllers
             var result = await _projectService.CreateProjectAsync(createProjectDto, User);
 
             return result.Match<IActionResult>(
-                    createdProject =>
+                    createdProjectSucceeded =>
                     {
-                        var dto = createdProject.CreateProjectResponseDto;
+                        var dto = createdProjectSucceeded.CreateProjectResponseDto;
                         return CreatedAtAction(nameof(GetProjectById), new { projectId = dto.Id }, dto);
                     },
-                    projectCreateFailed => StatusCode(500, new ErrorResponseDto{Message = "Failed to create project." }),
+                    createProjectFailed => StatusCode(500, new ErrorResponseDto{Message = "Failed to create project." }),
                     userNotFound => Unauthorized(),
                     unauthorized => Unauthorized()
                 );
@@ -55,8 +55,8 @@ namespace scrum_backend.Controllers
             var result = await _projectService.UpdateProjectAsync(projectId, updateProjectDto, User);
 
             return result.Match<IActionResult>(
-                projectUpdateSucceeded => Ok(projectUpdateSucceeded.UpdateProjectResponseDto),
-                projectUpdateFailed => StatusCode(500, new ErrorResponseDto{ Message = "Failed to update project." }),
+                updateProjectSucceeded => Ok(updateProjectSucceeded.UpdateProjectResponseDto),
+                updateProjectFailed => StatusCode(500, new ErrorResponseDto{ Message = "Failed to update project." }),
                 projectNotFound =>NotFound(new ErrorResponseDto{Message = "Failed to update project with given id." }),
                 forbidden => Forbid()
                 );
@@ -69,8 +69,8 @@ namespace scrum_backend.Controllers
             var result = await _projectService.DeleteProjectAsync(projectId, User);
 
             return result.Match<IActionResult>(
-                projectDeleteSucceeded => NoContent(),
-                projectDeleteFailed => StatusCode(500, new ErrorResponseDto{Message = "Failed to delete project."}),
+                deleteProjectSucceeded => NoContent(),
+                deleteProjectFailed => StatusCode(500, new ErrorResponseDto{Message = "Failed to delete project."}),
                 projectNotFound => NotFound(new ErrorResponseDto{Message = "Failed to delete project with given id."}),
                 forbidden => Forbid()
                 );

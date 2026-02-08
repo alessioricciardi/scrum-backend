@@ -6,5 +6,4 @@
         ScrumMaster = 1,
         ProductOwner = 2
     }
-
 }

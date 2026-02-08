@@ -2,17 +2,17 @@
 
 namespace scrum_backend.Results
 {
-    public record MembersGetSucceeded(IEnumerable<GetProjectMemberResponseDto> GetProjectMembersResponseDto);
-    public record MemberGetByIdSucceeded(GetProjectMemberResponseDto GetProjectMemberResponseDto);
+    public record GetMembersSucceeded(IEnumerable<GetProjectMemberResponseDto> GetProjectMembersResponseDto);
+    public record GetMemberByIdSucceeded(GetProjectMemberResponseDto GetProjectMemberResponseDto);
 
-    public record MemberAddSucceeded(AddProjectMemberResponseDto AddProjectMemberResponseDto);
-    public record MemberAddFailed;
+    public record AddMemberSucceeded(AddProjectMemberResponseDto AddProjectMemberResponseDto);
+    public record AddMemberFailed;
 
-    public record MemberRoleUpdateSucceeded;
-    public record MemberRoleUpdateFailed;
+    public record UpdateMemberRoleSucceeded;
+    public record UpdateMemberRoleFailed;
 
-    public record MemberRemoveSucceeded;
-    public record MemberRemoveFailed;
+    public record RemoveMemberSucceeded;
+    public record RemoveMemberFailed;
 
     public record MemberNotFound;
     public record UserIsAlreadyAMember;

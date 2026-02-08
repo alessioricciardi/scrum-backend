@@ -1,13 +1,15 @@
 ﻿using scrum_backend.Models.Projects;
 
-namespace scrum_backend.Models.Sprint
+namespace scrum_backend.Models.Sprints
 {
     public class Sprint
     {
+        private const int DefaultSprintDurationInDays = 14;
+
         public int Id { get; set; }
 
         public required int ProjectId { get; set; }
-        public required Project Project { get; set; }
+        public Project? Project { get; set; }
 
         public ICollection<SprintBacklogItem> SprintBacklogItems { get; set; } = [];
 
@@ -15,11 +17,6 @@ namespace scrum_backend.Models.Sprint
 
         public DateTime StartTime {  get; private set; } = DateTime.Now;
 
-        public required DateTime EndTime { get; set;}
-    }
-    public enum SprintStatus
-    {
-        InProgress = 0,
-        Archival = 1,
+        public DateTime EndTime { get; set; } = DateTime.Now.AddDays(DefaultSprintDurationInDays);
     }
 }

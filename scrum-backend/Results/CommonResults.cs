@@ -5,4 +5,5 @@
     public record Unauthorized;
     public record Forbidden;
     public record InvalidRole;
+    public record InvalidType(string Error);
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using scrum_backend.Authorization.Policies;
 using scrum_backend.Dtos;
 using scrum_backend.Dtos.ProjectMember.Requests;
 using scrum_backend.Results;
@@ -8,7 +9,7 @@ using scrum_backend.Services.ProjectMemberService;
 namespace scrum_backend.Controllers
 {
     [ApiController]
-    [Route("api/Project/{projectId:int}/Member")]
+    [Route("api/projects/{projectId:int}/members")]
     public class ProjectMemberController : ControllerBase
     {
         private readonly IProjectMemberService _projectMemberService;
@@ -25,7 +26,7 @@ namespace scrum_backend.Controllers
             var result = await _projectMemberService.GetMembersAsync(projectId, User);
 
             return result.Match<IActionResult>(
-                membersGetSucceeded => Ok(membersGetSucceeded.GetProjectMembersResponseDto),
+                getMembersSucceeded => Ok(getMembersSucceeded.GetProjectMembersResponseDto),
                 projectNotFound => NotFound(new ErrorResponseDto { Message = "Project not found." }),
                 forbidden => Forbid()
             );
@@ -38,7 +39,7 @@ namespace scrum_backend.Controllers
             var result = await _projectMemberService.GetMemberByIdAsync(projectId, memberId, User);
 
             return result.Match<IActionResult>(
-                memberGetByIdSucceeded => Ok(memberGetByIdSucceeded.GetProjectMemberResponseDto),
+                getMemberByIdSucceeded => Ok(getMemberByIdSucceeded.GetProjectMemberResponseDto),
                 memberNotFound => NotFound(new ErrorResponseDto { Message = "Member not found." }),
                 projectNotFound => NotFound(new ErrorResponseDto { Message = "Project not found." }),
                 forbidden => Forbid()
@@ -53,12 +54,15 @@ namespace scrum_backend.Controllers
             var result = await _projectMemberService.AddMemberAsync(projectId, addProjectMemberRequestDto, User);
 
             return result.Match<IActionResult>(
-                memberAddSucceeded =>
+                addMemberSucceeded =>
                 {
-                    var dto = memberAddSucceeded.AddProjectMemberResponseDto;
-                    return CreatedAtAction(nameof(GetProjectMemberById), new { projectId, memberId = dto.Id }, dto);
+                    var dto = addMemberSucceeded.AddProjectMemberResponseDto;
+                    return CreatedAtAction(
+                        nameof(GetProjectMemberById),
+                        new { projectId, memberId = dto.Id },
+                        dto);
                 },
-                memberAddFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to add a member." }),
+                addMemberFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to add a member." }),
                 userNotFound => NotFound(new ErrorResponseDto { Message = "User not found." }),
                 userIsAlreadyMember => Conflict(new ErrorResponseDto { Message = "User is already a member." }),
                 projectNotFound => NotFound(new ErrorResponseDto { Message = "Project not found." }),
@@ -68,14 +72,14 @@ namespace scrum_backend.Controllers
         }
 
         [Authorize]
-        [HttpPatch("{memberId:int}")]
+        [HttpPatch("{memberId:int}/Role")]
         public async Task<IActionResult> UpdateProjectMemberRole ([FromRoute] int projectId, int memberId, [FromBody] UpdateProjectMemberRoleRequestDto updateProjectMemberRoleRequestDto)
         {
             var result = await _projectMemberService.UpdateMemberRoleAsync(projectId, memberId, updateProjectMemberRoleRequestDto, User);
 
             return result.Match<IActionResult>(
-                memberRoleUpdateSucceeded => NoContent(),
-                memberRoleUpdateFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to update a member role." }),
+                updatMemberRoleSucceeded => NoContent(),
+                updateMemberRoleFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to update a member role." }),
                 memberNotFound => NotFound(new ErrorResponseDto { Message = "Member not found." }),
                 projectNotFound => NotFound(new ErrorResponseDto { Message = "Project not found." }),
                 invalidRole => BadRequest(new ErrorResponseDto { Message = "Invalid project role." }),
@@ -91,8 +95,8 @@ namespace scrum_backend.Controllers
             var result = await _projectMemberService.RemoveMemberAsync(projectId, memberId, User);
 
             return result.Match<IActionResult>(
-                memberRemoveSucceeded => NoContent(),
-                memberRemoveFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to remove a member." }),
+                removeMemberSucceeded => NoContent(),
+                removeMemberFailed => StatusCode(500, new ErrorResponseDto { Message = "Failed to remove a member." }),
                 memberNotFound => NotFound(new ErrorResponseDto { Message = "Member not found." }),
                 projectNotFound => NotFound(new ErrorResponseDto { Message = "Project not found." }),
                 forbidden => Forbid()

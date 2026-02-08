@@ -5,17 +5,15 @@ using System.Security.Claims;
 
 namespace scrum_backend.Authorization.Handlers
 {
-    public class ProjectOwnerAuthorizationHandler : AuthorizationHandler<ProjectOwnerRequirement, Project>
+    public class ProjectAdminOnlyAuthorizationHandler : AuthorizationHandler<ProjectAdminOnlyRequirement, Project>
     {
-        protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, ProjectOwnerRequirement requirement, Project project)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, ProjectAdminOnlyRequirement requirement, Project project)
         {
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (userId is null) return Task.CompletedTask;
+            if (userId is null) return;
 
             if (project.OwnerId == userId) context.Succeed(requirement);
-
-            return Task.CompletedTask;
         }
     }
 }
